@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alumni Connect | Mentorship</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Link your external custom stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <aside class="col-md-3 col-lg-2 sidebar">
+            <div class="brand">Alumni Connect</div>
+            <nav class="nav flex-column">
+                <a class="nav-link" th:href="@{/}">Dashboard</a>
+                <a class="nav-link" th:href="@{/alumni}">Alumni Directory</a>
+                <a class="nav-link active" th:href="@{/mentorship}">Mentorship</a>
+                <a class="nav-link" th:href="@{/placements}">Placement Statistics</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="col-md-9 col-lg-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">Mentorship Program</h2>
+                    <p class="muted mb-0">Connect students with experienced alumni mentors</p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#registerStudentModal">
+                        + Register Student
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRequestModal">
+                        + New Request
+                    </button>
+                </div>
+            </div>
+
+            <!-- Requests Table -->
+            <div class="card-custom">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Alumnus Mentor</th>
+                            <th>Message Note</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:if="${requests.empty}">
+                            <td colspan="5" class="text-center muted py-4">No mentorship requests found. Register a student and create a request!</td>
+                        </tr>
+                        <tr th:each="req : ${requests}">
+                            <td>
+                                <div class="fw-bold" th:text="${req.student.user.name}">Student Name</div>
+                                <small class="muted" th:text="${req.student.department}">Dept</small>
+                            </td>
+                            <td>
+                                <div class="fw-bold" th:text="${req.alumni.user.name}">Alumni Name</div>
+                                <small class="muted" th:text="${req.alumni.currentCompany}">Company</small>
+                            </td>
+                            <td th:text="${req.message}" style="max-width: 250px;">Intro note...</td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${req.status.name() == 'ACCEPTED' ? 'bg-success' : (req.status.name() == 'REJECTED' ? 'bg-danger' : 'bg-warning text-dark')}"
+                                      th:text="${req.status}">PENDING</span>
+                            </td>
+                            <td>
+                                <form th:action="@{/mentorship/{id}/status(id=${req.id})}" method="post" class="d-inline">
+                                    <input type="hidden" name="status" value="ACCEPTED">
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Accept</button>
+                                </form>
+                                <form th:action="@{/mentorship/{id}/status(id=${req.id})}" method="post" class="d-inline">
+                                    <input type="hidden" name="status" value="REJECTED">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Register Student Modal -->
+<div class="modal fade" id="registerStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/mentorship/student/register}" th:object="${newStudent}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Register Student Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" name="name" required placeholder="Alex Turner">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" name="email" required placeholder="alex@student.edu">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Enrollment Year</label>
+                            <input type="number" class="form-control" th:field="*{enrollmentYear}" required placeholder="2023">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Department</label>
+                            <input type="text" class="form-control" th:field="*{department}" required placeholder="Computer Science">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Semester</label>
+                            <input type="number" class="form-control" th:field="*{currentSemester}" required placeholder="5">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Create Mentorship Request Modal -->
+<div class="modal fade" id="createRequestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/mentorship/request}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Send Mentorship Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select Student</label>
+                        <select class="form-select" name="studentId" required>
+                            <option value="">Choose student...</option>
+                            <option th:each="s : ${students}" th:value="${s.id}" th:text="${s.user.name} + ' (' + ${s.department} + ')'"></option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Alumnus Mentor</label>
+                        <select class="form-select" name="alumniId" required>
+                            <option value="">Choose alumni mentor...</option>
+                            <option th:each="a : ${alumniList}" th:value="${a.id}" th:text="${a.user.name} + ' - ' + ${a.currentCompany}"></option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Introductory Message / Note</label>
+                        <textarea class="form-control" name="message" rows="3" required placeholder="Hi, I would love to get guidance on software engineering careers..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

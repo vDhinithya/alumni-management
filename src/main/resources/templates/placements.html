@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alumni Connect | Placement Statistics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Link your external custom stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <aside class="col-md-3 col-lg-2 sidebar">
+            <div class="brand">Alumni Connect</div>
+            <nav class="nav flex-column">
+                <a class="nav-link" th:href="@{/}">Dashboard</a>
+                <a class="nav-link" th:href="@{/alumni}">Alumni Directory</a>
+                <a class="nav-link" th:href="@{/mentorship}">Mentorship</a>
+                <a class="nav-link active" th:href="@{/placements}">Placement Statistics</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="col-md-9 col-lg-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">Placement Statistics</h2>
+                    <p class="muted mb-0">Overview of annual placement records and packages</p>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPlacementModal">
+                    + Add Placement Record
+                </button>
+            </div>
+
+            <!-- Table Card -->
+            <div class="card-custom">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Department</th>
+                            <th>Graduates</th>
+                            <th>Placed</th>
+                            <th>Placement %</th>
+                            <th>Avg Package</th>
+                            <th>Highest Package</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:if="${placements.empty}">
+                            <td colspan="7" class="text-center muted py-4">No placement records found. Add one to get started!</td>
+                        </tr>
+                        <tr th:each="stat : ${placements}">
+                            <td class="fw-bold" th:text="${stat.year}">2025</td>
+                            <td th:text="${stat.department}">Computer Science</td>
+                            <td th:text="${stat.totalGraduates}">120</td>
+                            <td th:text="${stat.totalPlaced}">110</td>
+                            <td>
+                                <span class="badge bg-success" th:text="${#numbers.formatDecimal(stat.placementPercentage, 1, 1)} + '%'">91.7%</span>
+                            </td>
+                            <td th:text="'₹ ' + ${stat.averagePackage} + ' LPA'">₹ 8.5 LPA</td>
+                            <td class="fw-bold text-success" th:text="'₹ ' + ${stat.highestPackage} + ' LPA'">₹ 24.0 LPA</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Modal for Adding Placement Record -->
+<div class="modal fade" id="addPlacementModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/placements/add}" th:object="${newPlacement}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Add Placement Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Year</label>
+                        <input type="number" class="form-control" th:field="*{year}" required placeholder="e.g. 2025">                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <input type="text" class="form-control" th:field="*{department}" required placeholder="e.g. Computer Science">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Total Graduates</label>
+                            <input type="number" class="form-control" th:field="*{totalGraduates}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Total Placed</label>
+                            <input type="number" class="form-control" th:field="*{totalPlaced}" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Average Package (LPA)</label>
+                            <input type="number" step="0.01" class="form-control" th:field="*{averagePackage}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Highest Package (LPA)</label>
+                            <input type="number" step="0.01" class="form-control" th:field="*{highestPackage}" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

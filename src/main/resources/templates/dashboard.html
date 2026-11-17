@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alumni Connect | Dashboard</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Link your external custom stylesheet -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- Sidebar -->
+        <aside class="col-md-3 col-lg-2 sidebar">
+            <div class="brand">Alumni Connect</div>
+
+            <nav class="nav flex-column">
+                <a class="nav-link active" th:href="@{/}">Dashboard</a>
+                <a class="nav-link" th:href="@{/alumni}">Alumni Directory</a>
+                <a class="nav-link" th:href="@{/mentorship}">Mentorship</a>
+                <a class="nav-link" th:href="@{/placements}">Placement Statistics</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="col-md-9 col-lg-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">Dashboard</h2>
+                    <p class="muted mb-0">Alumni network overview & live analytics</p>
+                </div>
+                <span class="badge text-bg-primary p-2">System Live</span>
+            </div>
+
+            <!-- Welcome Banner with Quick Action -->
+            <section class="welcome d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="fw-bold">Welcome to Alumni Connect</h3>
+                    <p class="mb-0">
+                        Track career trajectories, manage mentorship workflows, and review institutional placement metrics in real time.
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-dark fw-bold px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#quickRegisterModal">
+                        + Register New User
+                    </button>
+                </div>
+            </section>
+
+            <!-- Stat Counters -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="muted">Registered Users</div>
+                        <div class="stat-number" th:text="${alumniCount}">0</div>
+                        <small class="muted">Total platform accounts</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="muted">Employed Profiles</div>
+                        <div class="stat-number" th:text="${employmentCount}">0</div>
+                        <small class="muted">Career history records</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="muted">Mentorship Requests</div>
+                        <div class="stat-number" th:text="${mentorshipCount}">0</div>
+                        <small class="muted">Student-alumni interactions</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="muted">Placement Records</div>
+                        <div class="stat-number" th:text="${placementCount}">0</div>
+                        <small class="muted">Annual summaries logged</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="row g-4">
+                <!-- Alumni Analytics (Doughnut Chart) -->
+                <div class="col-lg-5">
+                    <div class="stat-card">
+                        <h5 class="fw-bold mb-3">User Role Analytics</h5>
+                        <div class="chart-container">
+                            <canvas id="userAnalyticsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Placement Statistics (Bar Chart) -->
+                <div class="col-lg-7">
+                    <div class="stat-card">
+                        <h5 class="fw-bold mb-3">Placement Package Trends (LPA)</h5>
+                        <div class="chart-container">
+                            <canvas id="placementStatsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+    </div>
+</div>
+
+<!-- Hidden Elements to Pass Database Data Safely to JavaScript -->
+<div th:each="stat : ${placementStats}" style="display: none;"
+     class="placement-record"
+     th:data-year="${stat.year}"
+     th:data-dept="${stat.department}"
+     th:data-avg="${stat.averagePackage}"
+     th:data-high="${stat.highestPackage}">
+</div>
+
+<input type="hidden" id="adminCount" th:value="${adminCount}">
+<input type="hidden" id="alumniRoleCount" th:value="${alumniRoleCount}">
+<input type="hidden" id="studentRoleCount" th:value="${studentRoleCount}">
+
+<!-- Script for Chart Rendering -->
+<script>
+    // 1. User Role Doughnut Chart
+    const adminVal = parseInt(document.getElementById('adminCount').value) || 0;
+    const alumniVal = parseInt(document.getElementById('alumniRoleCount').value) || 0;
+    const studentVal = parseInt(document.getElementById('studentRoleCount').value) || 0;
+
+    const userCtx = document.getElementById('userAnalyticsChart').getContext('2d');
+    new Chart(userCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Admins', 'Alumni', 'Students'],
+            datasets: [{
+                data: [adminVal, alumniVal, studentVal],
+                backgroundColor: ['#18243a', '#30415f', '#6c757d'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // 2. Placement Statistics Bar Chart (Reading from Hidden DOM Elements)
+    const placementYears = [];
+    const avgPackages = [];
+    const highPackages = [];
+
+    const recordElements = document.querySelectorAll('.placement-record');
+    recordElements.forEach(el => {
+        const year = el.getAttribute('data-year');
+        const dept = el.getAttribute('data-dept');
+        const avg = parseFloat(el.getAttribute('data-avg')) || 0;
+        const high = parseFloat(el.getAttribute('data-high')) || 0;
+
+        placementYears.push(`${year} - ${dept}`);
+        avgPackages.push(avg);
+        highPackages.push(high);
+    });
+
+    // Fallback if no placement stats exist yet
+    if (placementYears.length === 0) {
+        placementYears.push("No Data Yet");
+        avgPackages.push(0);
+        highPackages.push(0);
+    }
+
+    const placementCtx = document.getElementById('placementStatsChart').getContext('2d');
+    new Chart(placementCtx, {
+        type: 'bar',
+        data: {
+            labels: placementYears,
+            datasets: [
+                {
+                    label: 'Avg Package (LPA)',
+                    data: avgPackages,
+                    backgroundColor: '#30415f',
+                    borderRadius: 6
+                },
+                {
+                    label: 'Highest Package (LPA)',
+                    data: highPackages,
+                    backgroundColor: '#18243a',
+                    borderRadius: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true }
+            },
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Quick Registration Modal (Using modal-lg for proper spacing of all professional fields) -->
+<div class="modal fade" id="quickRegisterModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form th:action="@{/register-user}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Register New Platform User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="text-primary fw-bold mb-3">Account Information</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" name="name" required placeholder="e.g. Jane Smith">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-control" name="email" required placeholder="e.g. jane@example.com">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Role</label>
+                        <select class="form-select" name="role" id="roleSelect" onchange="toggleFields()" required>
+                            <option value="STUDENT">Student</option>
+                            <option value="ALUMNI">Alumni</option>
+                            <option value="ADMIN">Admin</option>
+                        </select>
+                    </div>
+
+                    <!-- Dynamic fields for Student -->
+                    <div id="studentFields">
+                        <h6 class="text-primary fw-bold mb-3 mt-3">Student Academic Details</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Enrollment Year</label>
+                                <input type="number" class="form-control" name="enrollmentYear" placeholder="2024">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Current Semester</label>
+                                <input type="number" class="form-control" name="currentSemester" placeholder="4">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Department</label>
+                            <input type="text" class="form-control" name="department" placeholder="Computer Science">
+                        </div>
+                    </div>
+
+                    <!-- Dynamic fields for Alumni -->
+                    <div id="alumniFields" style="display: none;">
+                        <h6 class="text-primary fw-bold mb-3 mt-3">Professional & Academic Details</h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Graduation Year</label>
+                                <input type="number" class="form-control" name="graduationYear" placeholder="2022">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Department</label>
+                                <input type="text" class="form-control" name="department" placeholder="Computer Science">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Degree</label>
+                                <input type="text" class="form-control" name="degree" placeholder="B.Tech">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Current Company</label>
+                                <input type="text" class="form-control" name="currentCompany" placeholder="Microsoft">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Designation</label>
+                                <input type="text" class="form-control" name="designation" placeholder="Software Engineer">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" name="location" placeholder="Seattle, USA">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bio / Summary</label>
+                            <textarea class="form-control" name="bio" rows="3" placeholder="Brief professional background..."></textarea>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to toggle form fields based on selected role -->
+<script>
+    function toggleFields() {
+        const role = document.getElementById('roleSelect').value;
+        const alumniFields = document.getElementById('alumniFields');
+        const studentFields = document.getElementById('studentFields');
+
+        if (role === 'ALUMNI') {
+            alumniFields.style.display = 'block';
+            studentFields.style.display = 'none';
+        } else if (role === 'STUDENT') {
+            alumniFields.style.display = 'none';
+            studentFields.style.display = 'block';
+        } else {
+            alumniFields.style.display = 'none';
+            studentFields.style.display = 'none';
+        }
+    }
+</script>
+</body>
+</html>
